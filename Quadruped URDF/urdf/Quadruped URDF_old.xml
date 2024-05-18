@@ -1,0 +1,513 @@
+<robot name="Quadruped URDF">
+
+<mujoco>
+        <compiler meshdir="/home/frederik/Documents/RoboGym/mujoco_models/sawyer/meshes/"
+                  balanceinertia="true"
+                  strippath="false"
+                  discardvisual="false"/>
+
+<link
+  name="Body">
+  <inertial>
+    <origin
+      xyz="0.000496651842729657 -0.00191436675848661 -0.00656282405798344"
+      rpy="0 0 0" />
+    <mass
+      value="2.72713096530588" />
+    <inertia
+      ixx="0.0372164866888024"
+      ixy="1.14328115404344E-11"
+      ixz="-1.84385166067456E-08"
+      iyy="0.00367331488542633"
+      iyz="1.05547030991378E-11"
+      izz="0.0370798690687598" />
+  </inertial>
+  <visual>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Body.STL" />
+    </geometry>
+    <material
+      name="">
+      <color
+        rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+    </material>
+  </visual>
+  <collision>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Body.STL" />
+    </geometry>
+  </collision>
+</link>
+<link
+  name="Front Right Thigh">
+  <inertial>
+    <origin
+      xyz="2.43741414216458E-05 -0.0142051404026353 -0.00547111407205264"
+      rpy="0 0 0" />
+    <mass
+      value="0.513489297249649" />
+    <inertia
+      ixx="0.000703443703532357"
+      ixy="5.05069776934335E-07"
+      ixz="-1.25476848652197E-07"
+      iyy="0.000379089863098612"
+      iyz="-1.02974442751939E-06"
+      izz="0.00102411507237723" />
+  </inertial>
+  <visual>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Front Right Thigh.STL" />
+    </geometry>
+    <material
+      name="">
+      <color
+        rgba="1 1 1 1" />
+    </material>
+  </visual>
+  <collision>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Front Right Thigh.STL" />
+    </geometry>
+  </collision>
+</link>
+<joint
+  name="Front Right Hip"
+  type="revolute">
+  <origin
+    xyz="-0.15605 -0.1796 0"
+    rpy="1.5708 0.73734 -1.5708" />
+  <parent
+    link="Body" />
+  <child
+    link="Front Right Thigh" />
+  <axis
+    xyz="0 0 1" />
+  <limit
+    lower="0"
+    upper="0"
+    effort="0"
+    velocity="0" />
+</joint>
+<link
+  name="Front Right Shin">
+  <inertial>
+    <origin
+      xyz="0.1248780823163 -0.00732497518642935 0.00017505649013605"
+      rpy="0 0 0" />
+    <mass
+      value="0.129610127102807" />
+    <inertia
+      ixx="3.51684106957956E-05"
+      ixy="8.64609723784186E-07"
+      ixz="7.49065225470579E-10"
+      iyy="4.9857666056172E-05"
+      iyz="-4.6532876481813E-11"
+      izz="5.09700357908981E-05" />
+  </inertial>
+  <visual>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Front Right Shin.STL" />
+    </geometry>
+    <material
+      name="">
+      <color
+        rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+    </material>
+  </visual>
+  <collision>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Front Right Shin.STL" />
+    </geometry>
+  </collision>
+</link>
+<joint
+  name="Front Right Knee"
+  type="revolute">
+  <origin
+    xyz="0 -0.13625 0.014875"
+    rpy="0 0 0" />
+  <parent
+    link="Front Right Thigh" />
+  <child
+    link="Front Right Shin" />
+  <axis
+    xyz="0 0 1" />
+  <limit
+    lower="0"
+    upper="0"
+    effort="0"
+    velocity="0" />
+</joint>
+<link
+  name="Front Left Thigh">
+  <inertial>
+    <origin
+      xyz="-2.69567127114678E-06 -0.0142673340488066 0.00542295719977118"
+      rpy="0 0 0" />
+    <mass
+      value="0.513479185634994" />
+    <inertia
+      ixx="0.000703377558606604"
+      ixy="-5.92700407826434E-08"
+      ixz="-6.4102146703666E-09"
+      iyy="0.000379154000610083"
+      iyz="1.03700632804851E-06"
+      izz="0.00102411493476719" />
+  </inertial>
+  <visual>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Front Left Thigh.STL" />
+    </geometry>
+    <material
+      name="">
+      <color
+        rgba="1 1 1 1" />
+    </material>
+  </visual>
+  <collision>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Front Left Thigh.STL" />
+    </geometry>
+  </collision>
+</link>
+<joint
+  name="Front Left Hip"
+  type="revolute">
+  <origin
+    xyz="0.15605 -0.1796 0"
+    rpy="1.5708 0.73734 -1.5708" />
+  <parent
+    link="Body" />
+  <child
+    link="Front Left Thigh" />
+  <axis
+    xyz="0 0 -1" />
+  <limit
+    lower="0"
+    upper="0"
+    effort="0"
+    velocity="0" />
+</joint>
+<link
+  name="Front Left Shin">
+  <inertial>
+    <origin
+      xyz="0.124878082316303 -0.00732497518642785 0.000177556490133124"
+      rpy="0 0 0" />
+    <mass
+      value="0.129610127102807" />
+    <inertia
+      ixx="3.51684106957956E-05"
+      ixy="8.64609723784203E-07"
+      ixz="7.49065225476954E-10"
+      iyy="4.98576660561721E-05"
+      iyz="-4.653287647839E-11"
+      izz="5.09700357908982E-05" />
+  </inertial>
+  <visual>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Front Left Shin.STL" />
+    </geometry>
+    <material
+      name="">
+      <color
+        rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+    </material>
+  </visual>
+  <collision>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Front Left Shin.STL" />
+    </geometry>
+  </collision>
+</link>
+<joint
+  name="Front Left Knee"
+  type="revolute">
+  <origin
+    xyz="0 -0.136249999870001 -0.015125"
+    rpy="0 0 0" />
+  <parent
+    link="Front Left Thigh" />
+  <child
+    link="Front Left Shin" />
+  <axis
+    xyz="0 0 1" />
+  <limit
+    lower="0"
+    upper="0"
+    effort="0"
+    velocity="0" />
+</joint>
+<link
+  name="Rear Right Thigh">
+  <inertial>
+    <origin
+      xyz="2.43741414215626E-05 -0.0142051404026354 -0.00547111407205259"
+      rpy="0 0 0" />
+    <mass
+      value="0.513489297249649" />
+    <inertia
+      ixx="0.000703443703532356"
+      ixy="5.05069776933996E-07"
+      ixz="-1.25476848652012E-07"
+      iyy="0.000379089863098611"
+      iyz="-1.02974442751944E-06"
+      izz="0.00102411507237722" />
+  </inertial>
+  <visual>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Rear Right Thigh.STL" />
+    </geometry>
+    <material
+      name="">
+      <color
+        rgba="1 1 1 1" />
+    </material>
+  </visual>
+  <collision>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Rear Right Thigh.STL" />
+    </geometry>
+  </collision>
+</link>
+<joint
+  name="Rear Right Hip"
+  type="revolute">
+  <origin
+    xyz="-0.15605 0.1796 0"
+    rpy="1.5708 0.73734 -1.5708" />
+  <parent
+    link="Body" />
+  <child
+    link="Rear Right Thigh" />
+  <axis
+    xyz="0 0 -1" />
+  <limit
+    lower="0"
+    upper="0"
+    effort="0"
+    velocity="0" />
+</joint>
+<link
+  name="Rear Right Shin">
+  <inertial>
+    <origin
+      xyz="0.124878082316302 -0.00732497518642894 0.000177556490132569"
+      rpy="0 0 0" />
+    <mass
+      value="0.129610127102807" />
+    <inertia
+      ixx="3.51684106957956E-05"
+      ixy="8.64609723784208E-07"
+      ixz="7.49065225475337E-10"
+      iyy="4.9857666056172E-05"
+      iyz="-4.65328764813094E-11"
+      izz="5.09700357908981E-05" />
+  </inertial>
+  <visual>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Rear Right Shin.STL" />
+    </geometry>
+    <material
+      name="">
+      <color
+        rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+    </material>
+  </visual>
+  <collision>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Rear Right Shin.STL" />
+    </geometry>
+  </collision>
+</link>
+<joint
+  name="Rear Right Knee"
+  type="revolute">
+  <origin
+    xyz="0 -0.13624999987 0.0151249999999999"
+    rpy="0 0 0" />
+  <parent
+    link="Rear Right Thigh" />
+  <child
+    link="Rear Right Shin" />
+  <axis
+    xyz="0 0 1" />
+  <limit
+    lower="0"
+    upper="0"
+    effort="0"
+    velocity="0" />
+</joint>
+<link
+  name="Rear Left Thigh">
+  <inertial>
+    <origin
+      xyz="-2.69567127120229E-06 -0.0142673340488067 0.00542295719977112"
+      rpy="0 0 0" />
+    <mass
+      value="0.513479185634994" />
+    <inertia
+      ixx="0.000703377558606604"
+      ixy="-5.92700407825756E-08"
+      ixz="-6.41021467034991E-09"
+      iyy="0.000379154000610084"
+      iyz="1.03700632804845E-06"
+      izz="0.00102411493476719" />
+  </inertial>
+  <visual>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Rear Left Thigh.STL" />
+    </geometry>
+    <material
+      name="">
+      <color
+        rgba="1 1 1 1" />
+    </material>
+  </visual>
+  <collision>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Rear Left Thigh.STL" />
+    </geometry>
+  </collision>
+</link>
+<joint
+  name="Rear Left Hip"
+  type="revolute">
+  <origin
+    xyz="0.15605 0.179600000000001 0"
+    rpy="1.5707963267949 0.737344032497118 -1.5707963267949" />
+  <parent
+    link="Body" />
+  <child
+    link="Rear Left Thigh" />
+  <axis
+    xyz="0 0 1" />
+  <limit
+    lower="0"
+    upper="0"
+    effort="0"
+    velocity="0" />
+</joint>
+<link
+  name="Rear Left Shin">
+  <inertial>
+    <origin
+      xyz="0.124878082316303 -0.00732497518643049 0.000175056490132913"
+      rpy="0 0 0" />
+    <mass
+      value="0.129610127102807" />
+    <inertia
+      ixx="3.51684106957956E-05"
+      ixy="8.64609723784319E-07"
+      ixz="7.49065225478314E-10"
+      iyy="4.9857666056172E-05"
+      iyz="-4.65328764774071E-11"
+      izz="5.09700357908981E-05" />
+  </inertial>
+  <visual>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Rear Left Shin.STL" />
+    </geometry>
+    <material
+      name="">
+      <color
+        rgba="0.752941176470588 0.752941176470588 0.752941176470588 1" />
+    </material>
+  </visual>
+  <collision>
+    <origin
+      xyz="0 0 0"
+      rpy="0 0 0" />
+    <geometry>
+      <mesh
+        filename="package://Quadruped URDF/meshes/Rear Left Shin.STL" />
+    </geometry>
+  </collision>
+</link>
+<joint
+  name="Rear Left Knee"
+  type="revolute">
+  <origin
+    xyz="0 -0.136249999870001 -0.015125"
+    rpy="0 0 0" />
+  <parent
+    link="Rear Left Thigh" />
+  <child
+    link="Rear Left Shin" />
+  <axis
+    xyz="0 0 1" />
+  <limit
+    lower="0"
+    upper="0"
+    effort="0"
+    velocity="0" />
+</joint>
+</robot>
