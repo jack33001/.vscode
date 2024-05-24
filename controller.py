@@ -1,5 +1,6 @@
 import numpy as np
 from scipy.optimize import fsolve
+from scipy.special import comb
 
 class gait_scheduler:
 # A high level controller for coordinating the motion of the four legs. Commands are given to this object by some sort of motion planning object
@@ -10,18 +11,11 @@ class leg_controller:
 # A mid-level controller for control of each leg. Commands are given to this object by instances of the "gait_scheduler" object, and this object
 # gives comands to the "pd" object.
     def __init__(self):
-        kp_pos = 10
-        kd_pos = .5
-        kp_force = 10
-        kd_force = .5
-        self.pd = pd_controller(kp_pos,kd_pos,kp_force,kd_force)
         self.curr_pos = np.array([np.pi/4 , np.pi/4*-2])
         self.curr_vel = 0
         # all/most controllers
         self.v_des = 1                              # desired velocity
         self.contact = 0                            # boolean, is the foot touching the ground?
-        self.hip_pos = np.pi/4                      # current hip position
-        self.knee_pos = np.pi/4                     # current knee position
         self.body_state = 0                         # current state of the body
         self.foot_forces = 0                        # forces on the foot
         self.l1 = 15                                # thigh length
@@ -39,9 +33,9 @@ class leg_controller:
         self.init_pos = np.array([-2,7])              # foot's init state position
         # flight state
         self.liftoff_time = 0                       # time the foot last left the ground
-        self.t_flight = 1                           # time the foot has been in the flight state
+        self.t_flight = .2                          # time the foot has been in the flight state
         self.bezier_pts = np.array([[self.init_pos[0],0,-self.init_pos[0]],[self.init_pos[1],12,self.init_pos[1]]])
-        #[self.flight_traj_x,self.flight_traj_y] = self.bezier(self.bezier_pts[1,:],self.bezier_pts[2,:],np.linspace(0,.2,100))
+        [self.flight_traj_x,self.flight_traj_y] = self.bezier(self.bezier_pts[0,:],self.bezier_pts[1,:])
         # stance state
         self.touchdown_time = 0                     # time the foot last touched the ground
         self.Tst = .2                               # length of the last stance phase
@@ -62,11 +56,14 @@ class leg_controller:
         # init state
         if self.state == 0:
             # transition out of the stance state
-            #if t >= 1:
-            #    self.transitions(0,t)
+            if t >= 10:
+                self.transitions(0,t)
             return self.init(t)
         # flight state
         elif self.state == 1:
+            if t >= t + self.t_flight:
+                self.state=0
+                print('left flight state')
             return  self.flight(t)
         # stance state
         elif self.state == 2:
@@ -79,7 +76,7 @@ class leg_controller:
             self.state = 1
             # generate the bezier curve
             tspan = np.linspace(0,1,100)
-            [self.flight_traj_x,self.flight_traj_y] = self.bezier(self.bezier_pts[1,:],self.bezier_pts[2,:],tspan)
+            [self.flight_traj_x,self.flight_traj_y] = self.bezier(self.bezier_pts[0,:],self.bezier_pts[1,:])
             # update liftoff time
             self.liftoff_time = t
         # transition flight --> stance
@@ -100,9 +97,24 @@ class leg_controller:
     def init(self,t):
         # return the joint positions corresponding to the init x and y
         # coords
-        joints_des = self.cartesian_to_joint(self.init_x,self.init_y,np.pi/4,np.pi/4)
-        effort = self.pd.run_pos(joints_des,self.curr_pos,self.curr_vel)
-        return effort
+        joints_des = self.cartesian_to_joint(self.curr_pos,self.init_pos[0],self.init_pos[1])
+        return joints_des
+    
+    # flight state for the leg - position control along a bezier curve
+    def flight(self,t):
+        # update the position along the bezier trajectory
+        flight_percent = (t-self.liftoff_time)/self.t_flight
+        flight_idx = round(self.bez_res * flight_percent)
+        if flight_idx > (np.size(self.flight_traj_x) - 1):
+            flight_idx = np.size(self.flight_traj_x)-1
+        
+        x = self.flight_traj_x[flight_idx]
+        y = self.flight_traj_y[flight_idx]
+
+        # convert bezier (x,y) to joints
+        [th1_des,th2_des] = self.cartesian_to_joint(self.curr_pos,x,y)
+    
+        return np.array(th1_des,th2_des)
 
 # ----------------------------------------------------- Helper Functions ------------------------------------------------------------
     # Inverse Kinematics:
@@ -110,10 +122,10 @@ class leg_controller:
     def jacobian(self,th_vector):
         th1 = th_vector[0]
         th2 = th_vector[1]
-        j_11 = -self.l1*np.sin(th1) - self.l2*np.sin(th1 + th2)
-        j_12 = -self.l2*np.sin(th1 +th2)
-        j_21 = self.l1*np.cos(th1) + self.l2*np.cos(th1+th2)
-        j_22 = self.l2*np.cos(th1 + th2)
+        j_11 = -self.l2*np.sin(th1) - self.l2*np.sin(th1 + th2)
+        j_12 = -self.l1*np.sin(th1 +th2)
+        j_21 = self.l2*np.cos(th1) + self.l2*np.cos(th1+th2)
+        j_22 = self.l1*np.cos(th1 + th2)
         J = np.array([[j_11,j_12],[j_21,j_22]])
         return J
 
@@ -121,20 +133,39 @@ class leg_controller:
     def f(self,th_vector):
         th1 = th_vector[0]
         th2 = th_vector[1]
-        f_11 = self.l1*np.cos(th1) + self.l2*np.cos(th1 + th2) - self.x_inv
-        f_21 = self.l1*np.sin(th1) + self.l2*np.sin(th1 + th2) - self.y_inv
+        f_11 = self.l1*np.cos(th1) + self.l2*np.cos(th1 + th2) - self.y_inv
+        f_21 = self.l1*np.sin(th1) + self.l2*np.sin(th1 + th2) - self.x_inv
+        # punish joint angles that are multiples of a single cycle
+        if abs(th1) > np.pi:
+            f_11 = -1e6
+            f_21 = -1e6
+        elif abs(th2) > np.pi:
+            f_11 = -1e6
+            f_21 = -1e6
+        # punish joint configurations that point the knee in the wrong direction
+        '''elif th2 < 0:
+            # < for backwards knees, > for forward knees
+            f_11 = -1e6
+            f_21 = -1e6'''
+
         f = np.array([f_11,f_21])
         return f
 
     # Inverse Kinematics - Solution
     def cartesian_to_joint(self,th_guess,x_inv,y_inv):
+        if np.sqrt(x_inv**2 + (y_inv - self.l1 - self.l2)**2) >= (self.l1 + self.l2):
+            th1 = 0
+            th2 = 0
+            print("Inverse kinematics are asking the leg to go somewhere it can't reach!")
+            return np.array([th1,th2])
+
         # unpack the cartesian points and account for the origin transform
         self.x_inv = x_inv
-        self.y_inv =  - y_inv + self.l1 + self.l2
+        self.y_inv = -y_inv + self.l1 + self.l2
         # solve the inverse kinematics problem
-        solution = fsolve(func=self.f, x0=th_guess, fprime=self.jacobian, full_output=False, xtol=1e-10)
+        solution = fsolve(func=self.f, x0=th_guess, fprime=self.jacobian, full_output=False, xtol=1e-5)
         # adjust the reference frame (theta is defined off the vertical, not off the horizontal)
-        solution[0] = solution[0] - np.pi/2
+        #solution[0] = solution[0] - np.pi/2
         return solution
 
 
@@ -146,7 +177,7 @@ class leg_controller:
         x = self.l2*np.sin(th1+th2) + self.l1*np.sin(th1)
         
         # shift the origin down to the leg's zero point
-        y = -(y - self.l1 - self.l2)
+        y = self.l1 + self.l2 - y
 
         return np.array([x,y])
 
@@ -163,29 +194,22 @@ class leg_controller:
 
 
     # bezier curve generator
-    def bezier(self,a,b,t):
-        n = np.size(a)
-        offset_a = a(1)
-        offset_b = b(1)
-        
-        a = a - offset_a
-        b = b - offset_b
+    def bernstein_poly(self,i, n, t):
+        return comb(n, i) * ( t**(n-i) ) * (1 - t)**i
+    
+    def bezier(self, xPoints,yPoints):
 
-        x = np.zeros(np.size(t))
-        y = np.zeros(np.size(t))
-        
-        for i in range(n):
-            ni = np.math.factorial(n)/(np.math.factorial(n-i)*np.math.factorial(i))
+        nTimes = self.bez_res
+        nPoints = len(xPoints)
 
-            x = x + ni * np.multiply(np.power((1-t),(n-i)),np.power(t,np.multiply(i,a(i))))
-        
-            y = y + ni * np.multiply(np.power((1-t),(n-i)),np.power(t,np.multiply(i,b(i))))
-        
+        t = np.linspace(0.0, 1.0, nTimes)
 
-        x = x + offset_a
-        y = y + offset_b
+        polynomial_array = np.array([ self.bernstein_poly(i, nPoints-1, t) for i in range(0, nPoints)   ])
 
-        return np.array([x,y])
+        xvals = np.dot(xPoints, polynomial_array)
+        yvals = np.dot(yPoints, polynomial_array)
+
+        return np.array([xvals,yvals])
 
 
     # Gain modifier
@@ -198,18 +222,3 @@ class leg_controller:
             return 5 - 5*sst
         else:
             return 0
-    
-
-
-
-class pd_controller:
-    # A simple low-level class for PD control of each joint. Commands to this object are given only by instances of the "leg_controller" object.
-    def __init__(self,kp_pos,kd_pos,kp_force,kd_force):
-        self.kp_pos = kp_pos*np.array([1,1])
-        self.kd_pos = kd_pos*np.array([1,1])
-        self.kp_force = kp_force*np.array([1,1])
-        self.kd_force = kd_force*np.array([1,1])
-
-    def run_pos(self,pos_des,pos_act,vel_act):
-        error = pos_des - pos_act
-        return error * self.kp_pos - vel_act * self.kd_pos
