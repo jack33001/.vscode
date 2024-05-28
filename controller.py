@@ -30,7 +30,7 @@ class leg_controller:
         self.nr_iterlim = 15                        # newton-rhapson iteration limit
         self.bez_res = 100                          # bezier resolution
         # init state
-        self.init_pos = np.array([-2,7])              # foot's init state position
+        self.init_pos = np.array([0,29.9])             # foot's init state position
         # flight state
         self.liftoff_time = 0                       # time the foot last left the ground
         self.t_flight = .2                          # time the foot has been in the flight state
@@ -133,39 +133,33 @@ class leg_controller:
     def f(self,th_vector):
         th1 = th_vector[0]
         th2 = th_vector[1]
+        if abs(th1) > np.pi:
+            th1 = th1 % np.pi
+        elif abs(th2) > np.pi:
+            th2 = th2 % np.pi
         f_11 = self.l1*np.cos(th1) + self.l2*np.cos(th1 + th2) - self.y_inv
         f_21 = self.l1*np.sin(th1) + self.l2*np.sin(th1 + th2) - self.x_inv
-        # punish joint angles that are multiples of a single cycle
-        if abs(th1) > np.pi:
-            f_11 = -1e6
-            f_21 = -1e6
-        elif abs(th2) > np.pi:
-            f_11 = -1e6
-            f_21 = -1e6
-        # punish joint configurations that point the knee in the wrong direction
-        '''elif th2 < 0:
-            # < for backwards knees, > for forward knees
-            f_11 = -1e6
-            f_21 = -1e6'''
 
         f = np.array([f_11,f_21])
         return f
 
     # Inverse Kinematics - Solution
     def cartesian_to_joint(self,th_guess,x_inv,y_inv):
-        if np.sqrt(x_inv**2 + (y_inv - self.l1 - self.l2)**2) >= (self.l1 + self.l2):
-            th1 = 0
-            th2 = 0
-            print("Inverse kinematics are asking the leg to go somewhere it can't reach!")
-            return np.array([th1,th2])
-
         # unpack the cartesian points and account for the origin transform
         self.x_inv = x_inv
         self.y_inv = -y_inv + self.l1 + self.l2
+
+        # check if the desired output is outside of the joint space
+        if np.sqrt(self.x_inv**2 + (self.y_inv - self.l1 - self.l2)**2) > (self.l1 + self.l2):
+            th1 = np.pi/4
+            th2 = -np.pi/2
+            print("Inverse kinematics are asking the leg to go somewhere it can't reach!")
+            return np.array([th1,th2])
+
         # solve the inverse kinematics problem
         solution = fsolve(func=self.f, x0=th_guess, fprime=self.jacobian, full_output=False, xtol=1e-5)
-        # adjust the reference frame (theta is defined off the vertical, not off the horizontal)
-        #solution[0] = solution[0] - np.pi/2
+        solution[0] = solution[0] % np.pi - np.pi/2
+        solution[1] = solution[1] % np.pi
         return solution
 
 
