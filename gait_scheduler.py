@@ -7,7 +7,7 @@ class gait_scheduler:
         self.time = 0
         self.state = 0
         # fixed time variables
-        self.t_switch = .25
+        self.t_switch = .3
         self.t_elapsed = 0
         self.t_last_step = 0
 
@@ -21,6 +21,7 @@ class gait_scheduler:
             if self.state == 0:
                 fr_leg.transition_signal = True
                 self.state = 1
+            
             # step the fl foot
             elif self.state == 1:
                 fl_leg.transition_signal = True

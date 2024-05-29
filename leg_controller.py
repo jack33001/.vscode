@@ -3,15 +3,21 @@ from scipy.optimize import fsolve
 from scipy.special import comb
 
 class leg_controller:
-# A mid-level controller for control of each leg. Commands are given to this object by instances of the "gait_scheduler" object, and this object
-# gives comands to the "pd" object.
+# A mid-level controller for control of each leg. Commands are given to this selfect by instances of the "gait_scheduler" selfect, and this selfect
+# gives comands to the "pd" selfect.
     def __init__(self):
         self.curr_pos = np.array([np.pi/4 , np.pi/4*-2])
         self.curr_vel = 0
         # all/most controllers
         self.v_des = 1                              # desired velocity
         self.contact = 0                            # boolean, is the foot touching the ground?
-        self.body_state = 0                         # current state of the body
+        self.pitch = 0                              # the robot's pitch
+        self.pitch_vel = 0                          # the robot's pich angular velocity
+        self.roll = 0                               # the robot's roll
+        self.roll_vel = 0                           # the robot's roll angular velocity
+        self.yaw = 0                                # the robot's yaw
+        self.yaw_vel = 0                            # the robot's yaw velocity
+        self.forw_vel = 0                           # the robot's forward velocity
         self.foot_forces = 0                        # forces on the foot
         self.l1 = 15                                # thigh length
         self.l2 = 15                                # shin length
@@ -34,9 +40,9 @@ class leg_controller:
         [self.flight_traj_x,self.flight_traj_y] = self.bezier(self.bezier_pts[0,:],self.bezier_pts[1,:])
         # stance state
         self.touchdown_time = 0                     # time the foot last touched the ground
-        self.Tst = .2                               # length of the last stance phase
+        self.Tst = .1                               # length of the last stance phase
         self.Tsw = .22                              # pulled from cheetah paper
-        self.Tair = .2                              # time both feet were in the air
+        self.Tair = .05                             # time both feet were in the air
         self.T = self.Tst + self.Tsw + self.Tair    # time of a total cycle
         self.ax = .1                                # x force amplitude - patrick's thesis says this is user selected, not sure why?
         self.yhip_des = 15                          # desired robot hip ride height
@@ -47,6 +53,8 @@ class leg_controller:
         self.kdx_v = 1                              # velocity p gain
         self.kp_th = 1                              # pitch oscillation p gain
         self.kd_th = 1                              # pitch oscillation d gain
+        self.t_hip = 0                              # current torque on the hip
+        self.t_knee = 0                             # current torque on the knee
 
     def run_controller(self,t):
         # init state
@@ -59,7 +67,8 @@ class leg_controller:
         # flight state
         elif self.state == 1:
             if t >= self.liftoff_time + self.t_flight:
-                self.state=0
+                print("Moved into stance")
+                self.state = 2
             return  self.flight(t)
         # stance state
         elif self.state == 2:
@@ -106,11 +115,45 @@ class leg_controller:
         y = self.flight_traj_y[flight_idx]
 
         # convert bezier (x,y) to joints (th1,th2)
-        joints_des = self.cartesian_to_joint(self.curr_pos,x,y)
+        return self.cartesian_to_joint(self.curr_pos,x,y)
     
-        #print(f"X: {x} Y: {y}       joints_Des: {joints_des}")
+    # stance state for the leg - impulse control
+    def stance(self,t):
+        #unpack/calculate necessary state info
+        theta = self.pitch
+        thetad = self.pitch_vel
+        xd = self.forw_vel
+        yhip = 5
+        ydhip = 5
 
-        return joints_des
+        #calculate force profile amplitudes
+        ay = .25*self.m*9.81*np.pi*self.T/self.Tst
+        #calculate stance feedforward values
+        fx_ff = ay * np.sin(np.pi*t/self.Tst)
+        fy_ff = self.ax * np.sin(np.pi*t/self.Tst)
+        fx_ff = 1
+        fy_ff = 1
+
+        #calculate the hip height stabilizing feedback force
+        tbar = t - self.touchdown_time
+        sst = tbar/self.Tst
+        fx_hip = self.gfb(sst)*sst*(-self.kpy_hip*(yhip - self.yhip_des) - self.kdy_hip*(ydhip))
+        fy_hip = 0
+        #calculate the velocity stabilizing feedback force
+        fx_v = -self.kdx_v*(xd - self.v_des)
+        fy_v = 0
+        #calculate the pitch stabilizing feedback force
+        #fx_th = 0
+        #fy_th = 1/(x-x_foot) * (self.kp_th*theta + self.kd_th*(thetad - self.thetad_des))        
+
+        #gait pattern stabilizer
+        self.Tst = self.L/self.v_des - self.k_stab*(self.Tst + self.Tair - self.T/2)
+
+        #Calculate the final output of the controller
+        out1_des = fx_ff# + fx_hip + fx_v+ fx_th
+        out2_des = fy_ff# + fy_hip + fy_v+ fy_th
+
+        return np.array([out1_des,out2_des])
 
 # ----------------------------------------------------- Helper Functions ------------------------------------------------------------
     # Inverse Kinematics:
