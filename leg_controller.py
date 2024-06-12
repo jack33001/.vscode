@@ -69,7 +69,7 @@ class leg_controller:
             # transition out of the stance state
             if self.transition_signal:
                 self.transition_signal = False
-                self.transitions(0,t)
+                self.transitions(1,t)
             return self.init(t)
         # flight state
         elif self.state == 1:
@@ -172,6 +172,7 @@ class leg_controller:
         fx_des = 0
         fy_des = 1
         joint_forces = self.force_map(np.array([fx_des, fy_des]))
+        joint_forces = np.ones(2)
 
         return joint_forces
 
@@ -229,10 +230,9 @@ class leg_controller:
             return np.array([th1, th2])
 
         # solve the inverse kinematics problem
-        #print(f'IK th1th2: {th_guess}    IK xy: {self.x_inv,self.y_inv}')
         solution = fsolve(func=self.f,
                           x0=th_guess,
-                          #fprime=self.jacobian,
+                          fprime=self.jacobian,
                           full_output=False,
                           xtol=1e-5)
         solution[0] = solution[0] % np.pi - np.pi / 2
@@ -258,7 +258,7 @@ class leg_controller:
         j = self.jacobian(transformed_curr_pos)
 
         # Transform from grf space to joint space
-        torque = -np.dot(np.transpose(j),F)
+        torque = np.dot(np.linalg.inv(np.transpose(j)),F)
 
         return torque
 

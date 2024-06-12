@@ -21,7 +21,7 @@ class gait_scheduler:
             # step the fr foot
             if self.state == 0:
                 fr_leg.transition_signal = True
-                rl_leg.transition_signal = True
+                #rl_leg.transition_signal = True
                 self.state = 1
             # step the fl foot
             elif self.state == 1:
