@@ -6,8 +6,9 @@ from scipy.special import comb
 class leg_controller:
     # A mid-level controller for control of each leg. Commands are given to this selfect by instances of the "gait_scheduler" selfect, and this selfect
     # gives comands to the "pd" selfect.
-    def __init__(self, name):
+    def __init__(self, name,geom_id):
         self.name = name
+        self.geom_id = geom_id
         self.curr_pos = np.array([np.pi / 4, np.pi / 4 * -2])
         self.curr_vel = np.array([0, 0])
 
@@ -41,8 +42,7 @@ class leg_controller:
         self.init_pos = np.array([0, .2])  # foot's init state position
 
         # flight state
-        self.liftoff_time = 1  # time the foot last left the ground
-        self.t_flight = .2  # time the foot has been in the flight state
+        self.liftoff_time = 0  # time the foot last left the ground
         self.bezier_x = np.array([
             -0.2, -0.259, -0.275, -0.384, 0.261, -0.017, 0.248, 0.267, 0.259,
             0.2
@@ -62,11 +62,7 @@ class leg_controller:
 
         # stance state
         self.touchdown_time = 0  # time the foot last touched the ground
-        self.Tst = .15  # length of the last stance phase
-        self.Tsw = .22  # pulled from cheetah paper
-        self.Tair = .05  # time both feet were in the air
-        self.T = self.Tst + self.Tsw + self.Tair  # time of a total cycle
-        self.ax = 0  # x force amplitude - patrick's thesis says this is user selected, not sure why?
+        self.ax = 5 * -self.front_or_rear  # x force amplitude, used to control pitch oscillation
         self.yhip_des = 20  # desired robot hip ride height
         self.thetad_des = 0  # desired pitch oscillation speed
         self.k_stab = 1  # gait pattern stabilizer gain
@@ -111,9 +107,6 @@ class leg_controller:
             self.touchdown_time = t
             # switch to force feedback
             self.control_type = 1
-            # apply gait pattern stabilization
-            self.Tst = self.body_length / self.v_des - self.k_stab * (
-                self.Tst + self.Tair - self.T / 2)
         # transition flight --> stance
         elif transition == 1:
             # switch the state to stance
@@ -122,9 +115,6 @@ class leg_controller:
             self.touchdown_time = t
             # switch to force feedback
             self.control_type = 1
-            # apply gait pattern stabilization
-            self.Tst = self.body_length / self.v_des - self.k_stab * (
-                self.Tst + self.Tair - self.T / 2)
         # transition stance --> flight
         elif transition == 2:
             # ----- Flags and value updates -----
@@ -169,7 +159,6 @@ class leg_controller:
                     1 - 1 / 3 * bezier_x_dot[-1]**(-1) * self.v_des, 1
                 ]), np.array([0, 0, 0, 0]))
             self.flight_traj_idx = self.flight_traj_idx[0]
-            print(f"Transition Position: {foot_pos} Transition length: {np.linalg.norm(foot_pos)}")
 
     # init state for the leg - just stands there
     def init(self, t):

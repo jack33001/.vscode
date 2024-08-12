@@ -6,26 +6,33 @@ class gait_scheduler:
     # (not implemented in this thesis), and this object gives commands to instances of the "leg_controller" object.
     def __init__(self,legs):
         self.time = 0
-        # fixed time variables
+        self.v_des = 1.5
+        self.body_l = .3
+        self.stride_l = .57 * self.body_l # scaling MIT's value to our body length
+        self.t_st = self.stride_l/self.v_des  
+        self.t_sw = .3#.22
+        self.t_air = (self.t_sw-self.t_st)/2
+        self.t_cyc = self.t_air + self.t_st
+        print(f"Stance: {self.t_st}, Flight: {self.t_sw}, Ratio {self.t_st/self.t_sw}")
+            # fixed time variables
         self.t_init = .5
-        self.t_flight_switch = .75
-        self.t_stance_switch = .175
             # bounding
         self.front_t_last_step = 0
         self.rear_t_last_step = 0
-        self.phase_offset = (self.t_flight_switch + self.t_stance_switch)/2
+        self.phase_offset = self.t_st + self.t_air
             # walking
         self.fr_t_last_step = 0
         self.fl_t_last_step = 0
         self.rr_t_last_step = 0
         self.rl_t_last_step = 0
-        # test controller values
+            # test controller values
         self.triggered = False
 
         # set leg values
         for leg in legs:
-            leg.t_flight = self.t_flight_switch
-            leg.Tst = self.t_stance_switch
+            leg.t_flight = self.t_sw
+            leg.Tst = self.t_st
+            leg.T = self.t_cyc
 
     # signal for a step after a fixed amount of time
     def fixed_time_bound(self, fr_leg, fl_leg, rr_leg, rl_leg):
@@ -46,13 +53,13 @@ class gait_scheduler:
                 self.front_t_last_step = self.time
                 break
             # flight --> stance
-            elif leg.state == 1 and ((self.front_t_elapsed > self.t_stance_switch) or leg.contact == True):
+            elif leg.state == 1 and (self.front_t_elapsed > self.t_air) and (leg.contact == True):
                 for leg in front:
                     leg.transition_signal = True
                 self.front_t_last_step = self.time
                 break
             # stance --> flight
-            elif leg.state == 2 and ((self.front_t_elapsed > self.t_flight_switch) or leg.contact == False):
+            elif leg.state == 2 and ((self.front_t_elapsed > self.t_st) or leg.contact == False):
                 for leg in front:
                     leg.transition_signal = True
                 self.front_t_last_step = self.time
@@ -61,19 +68,19 @@ class gait_scheduler:
         # rear legs
         for leg in rear:
             # init --> stance
-            if leg.state == 0 and self.rear_t_elapsed > self.t_init:
+            if leg.state == 0 and self.rear_t_elapsed > self.t_init + self.phase_offset:
                 for leg in rear:
                     leg.transition_signal = True
                 self.rear_t_last_step = self.time
                 break
             # flight --> stance
-            elif leg.state == 1 and ((self.rear_t_elapsed > self.t_stance_switch) or leg.contact == True):
+            elif leg.state == 1 and (self.rear_t_elapsed > self.t_air) and (leg.contact == True):
                 for leg in rear:
                     leg.transition_signal = True
                 self.rear_t_last_step = self.time
                 break
             # stance --> flight
-            elif leg.state == 2 and ((self.rear_t_elapsed > self.t_flight_switch) or leg.contact == False):
+            elif leg.state == 2 and ((self.rear_t_elapsed > self.t_st) or leg.contact == False):
                 for leg in rear:
                     leg.transition_signal = True
                 self.rear_t_last_step = self.time
