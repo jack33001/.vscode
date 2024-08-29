@@ -13,6 +13,7 @@ class gait_scheduler:
         self.t_sw = .3#.22
         self.t_air = (self.t_sw-self.t_st)/2
         self.t_cyc = self.t_air + self.t_st
+        self.k_gpg = .3
         print(f"Stance: {self.t_st}, Flight: {self.t_sw}, Ratio {self.t_st/self.t_sw}")
             # fixed time variables
         self.t_init = .5
@@ -33,6 +34,7 @@ class gait_scheduler:
             leg.t_flight = self.t_sw
             leg.Tst = self.t_st
             leg.T = self.t_cyc
+            leg.v_des = self.v_des
 
     # signal for a step after a fixed amount of time
     def fixed_time_bound(self, fr_leg, fl_leg, rr_leg, rl_leg):
@@ -56,6 +58,7 @@ class gait_scheduler:
             elif leg.state == 1 and (self.front_t_elapsed > self.t_air) and (leg.contact == True):
                 for leg in front:
                     leg.transition_signal = True
+                    self.t_st = self.stride_l/self.v_des - self.k_gpg*(self.t_st + self.front_t_elapsed - self.t_cyc/2)
                 self.front_t_last_step = self.time
                 break
             # stance --> flight
@@ -77,6 +80,7 @@ class gait_scheduler:
             elif leg.state == 1 and (self.rear_t_elapsed > self.t_air) and (leg.contact == True):
                 for leg in rear:
                     leg.transition_signal = True
+                    self.t_st = self.stride_l/self.v_des - self.k_gpg*(self.t_st + self.rear_t_elapsed - self.t_cyc/2)
                 self.rear_t_last_step = self.time
                 break
             # stance --> flight

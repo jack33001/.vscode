@@ -6,14 +6,13 @@ from scipy.special import comb
 class leg_controller:
     # A mid-level controller for control of each leg. Commands are given to this selfect by instances of the "gait_scheduler" selfect, and this selfect
     # gives comands to the "pd" selfect.
-    def __init__(self, name,geom_id):
+    def __init__(self, name,geom_id,front_or_rear):
         self.name = name
         self.geom_id = geom_id
         self.curr_pos = np.array([np.pi / 4, np.pi / 4 * -2])
         self.curr_vel = np.array([0, 0])
 
         # all/most controllers
-        self.v_des = 1  # desired velocity
         self.contact = 0  # boolean, is the foot touching the ground?
         self.pitch = 0  # the robot's pitch
         self.pitch_vel = 0  # the robot's pich angular velocity
@@ -36,10 +35,10 @@ class leg_controller:
         self.avg_force = np.zeros(2)  # moving average of the joint forces
         self.contact_thresh = 1  # threshold for contact detection
         self.contact = False  # is the foot in contact with the ground?
-        self.front_or_rear = 1  # is the leg on the front or rear of the robot? 1 for front, -1 for rear
+        self.front_or_rear = front_or_rear  # is the leg on the front or rear of the robot? 1 for front, -1 for rear
 
         # init state
-        self.init_pos = np.array([0, .2])  # foot's init state position
+        self.init_pos = np.array([0, .21])  # foot's init state position
 
         # flight state
         self.liftoff_time = 0  # time the foot last left the ground
@@ -66,11 +65,11 @@ class leg_controller:
         self.yhip_des = 20  # desired robot hip ride height
         self.thetad_des = 0  # desired pitch oscillation speed
         self.k_stab = 1  # gait pattern stabilizer gain
-        self.kpy_hip = 0  #.5  # ride height p gain
-        self.kdy_hip = 0  #.5  # ride height d gain
-        self.kdx_v = 0  #.5  # velocity p gain
-        self.kp_th = 0  #.5  # pitch oscillation p gain
-        self.kd_th = 0  #.5  # pitch oscillation d gain
+        self.kpy_hip = 40  # ride height p gain
+        self.kdy_hip = 6  # ride height d gain
+        self.kdx_v = 12  # velocity p gain
+        self.kp_th = 6  # pitch oscillation p gain
+        self.kd_th = 3  # pitch oscillation d gain
         self.curr_force = np.zeros(
             2)  # current environmental forces on the joints
 
@@ -171,7 +170,7 @@ class leg_controller:
     # flight state for the leg - position control along a bezier curve
     def flight(self, t):
         # update the position along the bezier trajectory
-        # calculate the proper index to fetch from the phase-warped bezier s
+        # calculate the proper index to fetch from the phase-warped bezier
         flight_percent = (t - self.liftoff_time) / self.t_flight
         flight_percent_idx = round(self.bez_res * flight_percent)
         # make sure the index is within the bounds of the trajectory length
@@ -218,7 +217,7 @@ class leg_controller:
         fy_v = 0
         #calculate the pitch stabilizing feedback force
         fx_th = 0
-        fy_th = 0  #1/(-foot_pos[0]*self.front_or_rear) * (self.kp_th*theta + self.kd_th*(thetad - self.thetad_des))
+        fy_th = 1/(-foot_pos[0]*self.front_or_rear) * (self.kp_th*theta + self.kd_th*(thetad - self.thetad_des))
 
         #Calculate the final output of the controller
         fx_des = (fx_ff + fx_hip + fx_v + fx_th) / 2
